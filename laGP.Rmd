@@ -9,16 +9,13 @@ df$cut <- as.numeric(factor(df$cut, levels = c('Fair', 'Good', 'Very Good', 'Pre
 df$color <- as.numeric(factor(df$color, levels = c('J', 'I', 'H', 'G', 'F', 'E', 'D'))) - 1
 df$clarity <- as.numeric(factor(df$clarity, levels = c('I1', 'SI2', 'SI1', 'VS2', 'VS1', 'VVS2', 'VVS1', 'IF'))) - 1
 
-# Sélection des variables et réduction à 5000 lignes
 data <- df[1:5000, c('carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z', 'price')]
 
-# Séparation des données en train et test
 set.seed(42)
 train_indices <- sample(1:nrow(data), size = 0.9 * nrow(data))
 train_data <- data[train_indices, ]
 test_data <- data[-train_indices, ]
 
-# Séparation des variables X et Y
 X_train <- as.matrix(train_data[, -ncol(train_data)])
 Y_train <- train_data$price
 X_test <- as.matrix(test_data[, -ncol(test_data)])
