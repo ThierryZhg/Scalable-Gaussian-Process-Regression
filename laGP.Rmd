@@ -1,0 +1,87 @@
+```{r}
+library(laGP)
+
+# Chargement des données
+df <- read.csv("diamonds.csv")
+
+# Préparation des données
+df$cut <- as.numeric(factor(df$cut, levels = c('Fair', 'Good', 'Very Good', 'Premium', 'Ideal'))) - 1
+df$color <- as.numeric(factor(df$color, levels = c('J', 'I', 'H', 'G', 'F', 'E', 'D'))) - 1
+df$clarity <- as.numeric(factor(df$clarity, levels = c('I1', 'SI2', 'SI1', 'VS2', 'VS1', 'VVS2', 'VVS1', 'IF'))) - 1
+
+# Sélection des variables et réduction à 5000 lignes
+data <- df[1:5000, c('carat', 'cut', 'color', 'clarity', 'depth', 'table', 'x', 'y', 'z', 'price')]
+
+# Séparation des données en train et test
+set.seed(42)
+train_indices <- sample(1:nrow(data), size = 0.9 * nrow(data))
+train_data <- data[train_indices, ]
+test_data <- data[-train_indices, ]
+
+# Séparation des variables X et Y
+X_train <- as.matrix(train_data[, -ncol(train_data)])
+Y_train <- train_data$price
+X_test <- as.matrix(test_data[, -ncol(test_data)])
+Y_test <- test_data$price
+```
+ACL
+```{r}
+# Ajustement du modèle avec laGP
+tryCatch({
+  # méthode ALC
+  start_time <- Sys.time()
+  model <- aGP(X = X_train, Z = Y_train, XX = X_test, start = 6, end = 50, method = "alc", verb = 0)
+  end_time <- Sys.time()
+  training_time <- end_time - start_time
+
+  # Prédictions
+  predictions <- model$mean
+
+  # Calcul de la RMSE
+  rmse <- sqrt(mean((Y_test - predictions)^2))
+
+  # Affichage des résultats
+  print(paste("Temps d'entraînement (laGP) :", training_time))
+  print(paste("RMSE (laGP) :", rmse))
+
+  # Visualisation des résultats
+  plot(Y_test, predictions, xlab = "Valeurs réelles", ylab = "Valeurs prédites",
+       main = "Comparaison des valeurs réelles et prédites (laGP)")
+  abline(0, 1, col = "red")
+}, error = function(e) {
+  print(paste("Erreur avec le modèle laGP :", e))
+})
+```
+
+NN
+```{r}
+# Ajustement du modèle GP avec approximation NN
+tryCatch({
+  # Configuration de la méthode NN
+  start <- 6
+  end <- min(30, nrow(X_train))  # Limiter à 20 voisins
+  
+  # Ajustement avec la méthode NN
+  start_time <- Sys.time()
+  model <- aGP(X = X_train, Z = Y_train, XX = X_test, start = start, end = end, method = "nn", verb = 0)
+  end_time <- Sys.time()
+  training_time <- end_time - start_time
+
+  # Prédictions
+  predictions <- model$mean
+
+  # Calcul de la RMSE
+  rmse <- sqrt(mean((Y_test - predictions)^2))
+
+  # Affichage des résultats
+  print(paste("Temps d'entraînement (NN) :", training_time))
+  print(paste("RMSE (NN) :", rmse))
+
+  # Visualisation des résultats
+  plot(Y_test, predictions, xlab = "Valeurs réelles", ylab = "Valeurs prédites",
+       main = "Comparaison des valeurs réelles et prédites (NN)")
+  abline(0, 1, col = "red")
+}, error = function(e) {
+  print(paste("Erreur avec le modèle NN :", e))
+})
+```
